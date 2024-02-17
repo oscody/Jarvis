@@ -9,7 +9,7 @@ model = "tinyllama"
 
 llm = Ollama(model=model)
 
-question = "Answer in 1 sentence or less what is the capital of Jamaica the Island if you dont know the answer say idk?"
+question = "think step by step and Answer in 1 sentence or less what is the capital of Jamaica. If you dont know the answer say idk?"
 
 response = llm.invoke(question)
 
