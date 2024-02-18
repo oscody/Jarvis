@@ -9,29 +9,41 @@ import speech_recognition as sr
 from os import system
 import sys
 from gtts import gTTS  # Import gTTS
-
-from elevenlabs.client import ElevenLabs
-
+import datetime
+import pytz
 
 load_dotenv()
 
-print(os.getenv('picovoice'))
-print(os.getenv('keyWordPath'))
-print(os.getenv('elevenlabs'))
+# print(os.getenv('picovoice'))
+# print(os.getenv('keyWordPath'))
 
 ACCESS_KEY = os.getenv('picovoice')
 KEYWORD_PATH = os.getenv('keyWordPath')
-ELEVENLABS = os.getenv('elevenlabs')
-
-client = ElevenLabs(api_key=ELEVENLABS)
-
-
+GazaBoglePath = os.getenv('gazaBogle')
 
 # Create a recognizer object for Automatic Speech Recognition
 r = sr.Recognizer()
 source = sr.Microphone()
 
+# Define a log file location
+log_file = os.getenv("CHAT_HISTORY_LOG_PATH", "ChatSummary.log")
+
+
+def log_to_file(text):
+    # Get current time in Eastern Time Zone
+    eastern = pytz.timezone('US/Eastern')
+    now = datetime.datetime.now(eastern)
+    timestamp = now.strftime("%Y-%m-%d %H:%M:%S %Z")
+
+    with open(log_file, "a") as file:
+        file.write(f"{timestamp}: {text}\n")
+
 def respond(text):
+
+    # Log the text with date and time to a file
+    log_to_file(text)
+
+
     if sys.platform == 'darwin':
         ALLOWED_CHARS = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,?!-_$:+-/ ")
         clean_text = ''.join(c for c in text if c in ALLOWED_CHARS)
@@ -50,7 +62,7 @@ def wake_word_detection():
     try:
         porcupine = pvporcupine.create(
             access_key=ACCESS_KEY,
-            keyword_paths=[KEYWORD_PATH]
+            keyword_paths=[KEYWORD_PATH,GazaBoglePath]
         )
 
         pa = pyaudio.PyAudio()
@@ -89,19 +101,32 @@ def think():
 
     while True:
         if wake_word_detection():
+            respond("Ask me a question. I am listening.")
+
             with source as s:
                 print("Listening...")
                 r.adjust_for_ambient_noise(s)
-                audio = r.listen(s)
                 
-                print("Listening............")
-                respond("Let me think about it.")
+                try:
+                    # Wait for a question with a timeout (e.g., 5 seconds)
+                    audio = r.listen(s, timeout=10)
+                    print("Listening............")
+                except sr.WaitTimeoutError:
+                    # If no speech is detected within the timeout, print a message and continue listening for the wake word
+                    respond("No audio detected. Listening for wake word again...")
+                    continue  # Skip the rest of the loop and go back to listening for the wake word
+                    
             try:
-                respond("Thinking")
+                
+                respond("Let me think about it.")
+
                 
                 # Use Google's speech recognition to convert the audio to text
                 text = r.recognize_google(audio)
                 print("You said: " + text)
+
+                
+                log_to_file("You said: " + text)
 
                 # Add a short response
                 short_response = "think step by step and Answer in 1 sentence or less keep the response short " + text
