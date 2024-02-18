@@ -17,6 +17,7 @@ print(os.getenv('keyWordPath'))
 
 ACCESS_KEY = os.getenv('picovoice')
 KEYWORD_PATH = os.getenv('keyWordPath')
+GazaBoglePath = os.getenv('gazaBogle')
 
 # Create a recognizer object for Automatic Speech Recognition
 r = sr.Recognizer()
@@ -41,7 +42,7 @@ def wake_word_detection():
     try:
         porcupine = pvporcupine.create(
             access_key=ACCESS_KEY,
-            keyword_paths=[KEYWORD_PATH]
+            keyword_paths=[KEYWORD_PATH,GazaBoglePath]
         )
 
         pa = pyaudio.PyAudio()
@@ -80,15 +81,25 @@ def think():
 
     while True:
         if wake_word_detection():
+            respond("Ask me a question. I am listening.")
+
             with source as s:
                 print("Listening...")
                 r.adjust_for_ambient_noise(s)
-                audio = r.listen(s)
                 
-                print("Listening............")
-                respond("Let me think about it.")
+                try:
+                    # Wait for a question with a timeout (e.g., 5 seconds)
+                    audio = r.listen(s, timeout=10)
+                    print("Listening............")
+                except sr.WaitTimeoutError:
+                    # If no speech is detected within the timeout, print a message and continue listening for the wake word
+                    respond("No audio detected. Listening for wake word again...")
+                    continue  # Skip the rest of the loop and go back to listening for the wake word
+                    
             try:
-                respond("Thinking")
+                
+                respond("Let me think about it.")
+
                 
                 # Use Google's speech recognition to convert the audio to text
                 text = r.recognize_google(audio)
