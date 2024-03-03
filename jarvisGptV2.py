@@ -15,13 +15,13 @@ import pytz
 from langchain_openai import ChatOpenAI
 from langchain.chains import LLMChain
 from langchain_core.prompts import PromptTemplate
-from langchain.callbacks import Callback
+from langchain.callbacks.base import BaseCallbackHandler
 import asyncio
 
 
 load_dotenv()
 
-class CustomStreamingCallback(Callback):
+class CustomStreamingCallback(BaseCallbackHandler):
     def __init__(self, on_new_token):
         # on_new_token is a function that will be called every time a new token is generated
         self.on_new_token = on_new_token
@@ -31,6 +31,7 @@ class CustomStreamingCallback(Callback):
         await self.on_new_token(token)
 
 async def on_new_token(token):
+    print("---------------------------")
     # This is a simple example that just prints the token. 
     # You might want to append it to a string or handle it differently.
     print(token, end='', flush=True)
