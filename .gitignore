@@ -8,3 +8,4 @@ share/
 Jarvis/lib64
 .env
 temp.mp3
+audioFile/
